@@ -11,6 +11,7 @@
 # ---------------------------------------------------- #
 # ChangeLog for 1.6 (Siva Paramasivam)
 # *) percentage based check for disk usage will return percentage perfdata
+# *) added an option to exclude file systems types for disk usage check
 # ---------------------------------------------------- #
 # This script require Sys::Statistics::Linux
 #
@@ -41,7 +42,7 @@ use Sys::Statistics::Linux::Processes;
 use Sys::Statistics::Linux::SysInfo;
 
 
-use vars qw($script_name $script_version $o_sleep $o_pattern $o_cpu $o_context $o_procs $o_process $o_mem $o_net $o_disk $o_io $o_load $o_file $o_socket $o_paging $o_uptime $o_help $o_version $o_warning $o_critical $o_unit);
+use vars qw($script_name $script_version $o_sleep $o_pattern $x_pattern $o_cpu $o_context $o_procs $o_process $o_mem $o_net $o_disk $o_io $o_load $o_file $o_socket $o_paging $o_uptime $o_help $o_version $o_warning $o_critical $o_unit);
 use strict;
 
 # --------------------------- globals -------------------------- #
@@ -50,6 +51,7 @@ $script_name = "check_linux_stats";
 $script_version = "1.6";
 $o_help = undef;
 $o_pattern = undef;
+$x_pattern = undef;
 $o_version = undef;
 $o_warning = 0;
 $o_critical = 0;
@@ -366,6 +368,14 @@ sub check_mem {
 }
 
 sub check_disk {
+	my $df_x_options = '';
+	for (split ',', $x_pattern) {
+		$df_x_options .= " -x $_";
+	}
+
+	use Sys::Statistics::Linux::DiskUsage;
+	$Sys::Statistics::Linux::DiskUsage::DF_CMD = "df -kP$df_x_options 2>/dev/null";
+
 	my $lxs = Sys::Statistics::Linux->new(diskusage => 1);
 	$lxs->init;
 	sleep $o_sleep;
@@ -631,7 +641,7 @@ sub check_uptime {
 }
 
 sub usage {
-	print "Usage: $0 -C|-P|-M|-N|-D|-I|-L|-F|-S|-W|-U -p <pattern> -w <warning> -c <critical> [-s <sleep>] [-u <unit>] [-V] [-h]\n";
+	print "Usage: $0 -C|-P|-M|-N|-D|-I|-L|-F|-S|-W|-U -p <pattern> x <exclude> -w <warning> -c <critical> [-s <sleep>] [-u <unit>] [-V] [-h]\n";
 }
 
 
@@ -661,6 +671,8 @@ sub help {
 	-U, --uptime
 	-p, --pattern
 		eth0,eth1...sda1,sda2.../usr,/tmp
+        -x, --exclude
+                tmpfs,devtmpfs
 	-w, --warning
 	-c, --critical
 	-s, --sleep
@@ -691,7 +703,7 @@ sub check_options {
 		'h'	=> \$o_help,		'help'		=> \$o_help,
 		's:i'	=> \$o_sleep,		'sleep:i'	=> \$o_sleep,
 		'C'	=> \$o_cpu,		'cpu'		=> \$o_cpu,
-		'X'	=> \$o_context,	'ctx'		=> \$o_context,
+		'X'	=> \$o_context,		'ctx'		=> \$o_context,
 		'P'	=> \$o_procs, 		'procs'		=> \$o_procs,
 		'T'	=> \$o_process, 	'top'		=> \$o_process,
 		'M'	=> \$o_mem,		'memory'	=> \$o_mem,
@@ -705,6 +717,7 @@ sub check_options {
 		'U'	=> \$o_uptime,		'uptime'	=> \$o_uptime,
 		'V'	=> \$o_version,		'version'	=> \$o_version,
 		'p:s'	=> \$o_pattern,		'pattern:s'	=> \$o_pattern,
+		'x:s'	=> \$x_pattern,		'exclude:s'	=> \$x_pattern,
 		'w:s'	=> \$o_warning,		'warning:s'	=> \$o_warning,
 		'c:s'	=> \$o_critical,	'critical:s'	=> \$o_critical,
 		'u:s'	=> \$o_unit,	        'unit:s'	=> \$o_unit
