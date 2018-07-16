@@ -520,6 +520,7 @@ sub check_net {
 			my $crit = 0; #critical counter
 			my $warn = 0; #warning counter
 			foreach my $device (keys (%$net)) {
+				if($device ne "lo") {
 				my $txbyt = $net->{$device}->{txbyt};
 				my $rxerrs = $net->{$device}->{rxerrs};
 				my $ttbyt = $net->{$device}->{ttbyt};
@@ -541,6 +542,7 @@ sub check_net {
 					.$device."_rxbyt=".$rxbyt."B "
 					.$device."_rxerrs=".$rxerrs."B";
 			}
+		}
 		}
 
 		if($crit>0) {$status="CRITICAL";}
